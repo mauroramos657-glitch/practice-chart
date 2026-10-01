@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Practice Chart — Trading (papel)</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.8/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<header id="topbar">
+  <button id="btnMenu" class="icon-btn" title="Símbolo / proveedor">☰</button>
+  <div id="symbolBox">
+    <span id="symName">BTCUSDT</span>
+    <span id="symDesc" class="dim">Binance · Cripto</span>
+  </div>
+  <div id="tfGroup" class="chip-group"></div>
+  <div id="liveDot" class="dim">● en vivo</div>
+  <span class="grow"></span>
+  <div id="ohlcReadout" class="dim mono"></div>
+  <button id="btnIndic" class="icon-btn" title="Indicadores">📊</button>
+  <button id="btnReplay" class="icon-btn" title="Modo Replay">⏮ Replay</button>
+</header>
+
+<div id="body">
+  <aside id="toolbar">
+    <button class="tool" data-tool="cursor" title="Cursor (Esc)">↖</button>
+    <button class="tool" data-tool="trend" title="Línea de tendencia">／</button>
+    <button class="tool" data-tool="hline" title="Línea horizontal">—</button>
+    <button class="tool" data-tool="ray" title="Rayo horizontal">→</button>
+    <button class="tool" data-tool="rect" title="Rectángulo">▭</button>
+    <button class="tool" data-tool="fib" title="Retroceso de Fibonacci">Fib</button>
+    <div class="sep"></div>
+    <button id="btnClearDraw" title="Borrar todos los dibujos">🗑</button>
+    <div class="sep"></div>
+    <button id="btnMagnet" class="toggle" title="Imán a la vela (snap)">🧲</button>
+  </aside>
+
+  <main id="chartWrap">
+    <div id="chartContainer"></div>
+    <div id="cornerBadge" class="dim"></div>
+    <div id="replayBar" class="hidden">
+      <button id="rpStart" title="Elegir barra de inicio">🎯 Elegir inicio</button>
+      <button id="rpBack" title="Retroceder una barra">⏮</button>
+      <button id="rpPlay" title="Reproducir / pausar">▶</button>
+      <button id="rpFwd" title="Avanzar una barra">⏭</button>
+      <select id="rpSpeed" title="Velocidad">
+        <option value="1500">0.5x</option>
+        <option value="700" selected>1x</option>
+        <option value="350">2x</option>
+        <option value="120">4x</option>
+      </select>
+      <span id="rpInfo" class="dim mono"></span>
+      <span class="grow"></span>
+      <button id="rpExit">Salir de Replay</button>
+    </div>
+  </main>
+
+  <aside id="rightPanel">
+    <div class="panel-tabs">
+      <button class="ptab active" data-panel="trade">Operar</button>
+      <button class="ptab" data-panel="history">Historial</button>
+      <button class="ptab" data-panel="stats">Estadísticas</button>
+    </div>
+
+    <div id="panel-trade" class="panel">
+      <div class="row"><label>Balance (papel)</label><b id="balanceOut" class="mono"></b></div>
+      <div class="row"><label>Modo</label><b id="modeOut"></b></div>
+      <div class="row two">
+        <button id="btnBuy" class="buy">Comprar</button>
+        <button id="btnSell" class="sell">Vender</button>
+      </div>
+      <div class="row"><label for="riskPct">Riesgo por operación (%)</label>
+        <input id="riskPct" type="number" step="0.1" min="0.1" value="1"></div>
+      <div class="row"><label for="rrTarget">Ratio riesgo:beneficio objetivo</label>
+        <input id="rrTarget" type="number" step="0.1" min="0.1" value="2"></div>
+      <p class="hint">Elegí Comprar/Vender, después marcá el Stop Loss con un click en el gráfico (o
+        escribilo abajo). El Take Profit y la cantidad se calculan solos con el riesgo y el ratio
+        de arriba — los podés editar igual.</p>
+      <div id="pendingBox" class="hidden">
+        <div class="row"><label>Entrada</label><span id="pEntry" class="mono"></span></div>
+        <div class="row"><label for="pSl">Stop Loss</label><input id="pSl" type="number" step="any"></div>
+        <div class="row"><label for="pTp">Take Profit</label><input id="pTp" type="number" step="any"></div>
+        <div class="row"><label for="pQty">Cantidad</label><input id="pQty" type="number" step="any"></div>
+        <div class="row"><label>R:R real</label><span id="pRR" class="mono"></span></div>
+        <div class="row two">
+          <button id="pConfirm" class="buy">Confirmar</button>
+          <button id="pCancel" class="ghost">Cancelar</button>
+        </div>
+      </div>
+      <div id="posBox" class="hidden">
+        <h4>Posición abierta</h4>
+        <div class="row"><label>Lado</label><b id="posSide"></b></div>
+        <div class="row"><label>Entrada</label><span id="posEntry" class="mono"></span></div>
+        <div class="row"><label>SL</label><span id="posSl" class="mono"></span></div>
+        <div class="row"><label>TP</label><span id="posTp" class="mono"></span></div>
+        <div class="row"><label>No realizado</label><b id="posPnl" class="mono"></b></div>
+        <button id="btnCloseManual" class="ghost">Cerrar manual</button>
+      </div>
+    </div>
+
+    <div id="panel-history" class="panel hidden">
+      <div class="row"><button id="btnExportCsv" class="ghost">⬇ Exportar CSV</button></div>
+      <div id="histWrap"><table id="histTable"><thead><tr>
+        <th>Hora</th><th>Símbolo</th><th>Lado</th><th>Entrada</th><th>Salida</th><th>Motivo</th><th>PnL</th><th>R</th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div id="panel-stats" class="panel hidden">
+      <div id="statsGrid" class="stats-grid"></div>
+      <canvas id="equityCanvas" width="300" height="140"></canvas>
+    </div>
+  </aside>
+</div>
+
+<div id="indicMenu" class="hidden">
+  <h4>Indicadores <button id="indicClose" class="ghost small">✕</button></h4>
+  <label><input type="checkbox" id="ind-sma"> SMA <input type="number" id="ind-sma-p" value="20" class="mini"></label>
+  <label><input type="checkbox" id="ind-ema"> EMA <input type="number" id="ind-ema-p" value="20" class="mini"></label>
+  <label><input type="checkbox" id="ind-bb"> Bollinger <input type="number" id="ind-bb-p" value="20" class="mini"> ×<input type="number" id="ind-bb-k" value="2" step="0.1" class="mini"></label>
+  <label><input type="checkbox" id="ind-rsi"> RSI <input type="number" id="ind-rsi-p" value="14" class="mini"></label>
+  <label><input type="checkbox" id="ind-macd"> MACD <input type="number" id="ind-macd-f" value="12" class="mini">/<input type="number" id="ind-macd-s" value="26" class="mini">/<input type="number" id="ind-macd-sig" value="9" class="mini"></label>
+</div>
+
+<div id="symbolMenu" class="hidden">
+  <h4>Símbolo y proveedor <button id="symClose" class="ghost small">✕</button></h4>
+  <div class="row"><label>Proveedor</label>
+    <select id="providerSel">
+      <option value="binance">Binance (cripto, tiempo real)</option>
+      <option value="yahoo">Yahoo Finance (forex / índices, retraso ~1-15 min)</option>
+    </select>
+  </div>
+  <div id="symList" class="chip-group wrap"></div>
+  <div class="row"><label for="symCustom">Otro símbolo</label>
+    <input id="symCustom" placeholder="ej. ETHUSDT o EURUSD=X">
+    <button id="symCustomGo" class="ghost small">Ir</button>
+  </div>
+  <div class="row"><label for="tzSel">Zona horaria del gráfico</label>
+    <select id="tzSel">
+      <option value="America/Argentina/Buenos_Aires">Argentina (UTC-3)</option>
+      <option value="America/New_York">Nueva York</option>
+      <option value="UTC">UTC</option>
+      <option value="Europe/London">Londres</option>
+    </select>
+  </div>
+  <p class="hint" id="providerWarning"></p>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="/static/js/core.js"></script>
+<script src="/static/js/drawings.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
